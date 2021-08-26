@@ -1,10 +1,10 @@
+import root from "app-root-path";
 import { Client, Intents } from "discord.js";
 import {
-  BaseButton,
-  BaseCommand,
   getButtons,
   getGlobalCommands,
   getGuildCommands,
+  getSelectMenus,
   registerGlobalCommands,
   registerGuildCommands,
 } from "smooth-discord";
@@ -16,15 +16,17 @@ let commands = {
   guild: [],
 };
 let buttons = [];
+let selectMenus = [];
 
 const client = new Client({
   intents: Intents.FLAGS.GUILDS | Intents.FLAGS.GUILD_MESSAGES,
 });
 
 client.once("ready", async () => {
-  commands.global = await getGlobalCommands();
-  commands.guild = await getGuildCommands();
-  buttons = await getButtons();
+  commands.global = await getGlobalCommands(`${root}/src/commands/global`);
+  commands.guild = await getGuildCommands(`${root}/src/commands/guild`);
+  buttons = await getButtons(`${root}/src/buttons`);
+  selectMenus = await getSelectMenus(`${root}/src/selectMenus`);
 
   await registerGlobalCommands(client, commands.global);
   await registerGuildCommands(client, commands.guild);
@@ -41,7 +43,7 @@ client.on("interactionCreate", (interaction) => {
       command.execute(interaction);
     } else {
       interaction.reply({
-        content: "コマンドが見つかりませんでした。",
+        content: "The command is no longer supported.",
         ephemeral: true,
       });
     }
@@ -53,7 +55,19 @@ client.on("interactionCreate", (interaction) => {
       button.execute(interaction);
     } else {
       interaction.reply({
-        content: "そのボタンは期限切れです。",
+        content: "The button is no longer supported.",
+        ephemeral: true,
+      });
+    }
+  } else if (interaction.isSelectMenu()) {
+    const selectMenu = selectMenus.find(
+      (value) => value.component.customId === interaction.customId
+    );
+    if (selectMenu) {
+      selectMenu.execute(interaction);
+    } else {
+      interaction.reply({
+        content: "The menu is no longer supported.",
         ephemeral: true,
       });
     }
